@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 
 const express = require('express');
 const cors = require('cors');
@@ -21,7 +21,10 @@ app.get('/', (req, res) => res.send('API running'));
 
 // routes
 const schedulesRouter = require('./routes/schedules');
+const umoRoutesRouter = require('./routes/umo_routes');
+
 app.use('/schedules', schedulesRouter);
+app.use('/umo_routes', umoRoutesRouter);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);
