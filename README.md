@@ -19,7 +19,7 @@ The backend contains the following API endpoints:
 
 1. Navigate to the API directory:
    ```bash
-   cd /Users/steven_liu/Projects/unitrans_mvp/unitrans_steven/my-app/api
+   cd your-project-directory/api
    ```
 
 2. Install dependencies:
@@ -46,7 +46,7 @@ The backend runs on port 3000 by default.
 
 1. Navigate to the web directory:
    ```bash
-   cd /Users/steven_liu/Projects/unitrans_mvp/unitrans_steven/my-app/web
+   cd your-project-directory/web
    ```
 
 2. Install dependencies:
