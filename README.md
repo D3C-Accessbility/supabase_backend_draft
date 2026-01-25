@@ -1,16 +1,82 @@
-# React + Vite
+# Unitrans MVP
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack web application for Unitrans bus services with schedule management and notifications.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `api/` - Backend Express.js server
+- `web/` - Frontend React application
 
-## React Compiler
+## API Routes
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The backend contains the following API endpoints:
 
-## Expanding the ESLint configuration
+- `maps.js` - Google Maps navigation service
+- `schedules.js` - Departure notification schedules
+- `umo_routes.js` - Unitrans API calls
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Backend Setup
+
+1. Navigate to the API directory:
+   ```bash
+   cd /Users/steven_liu/Projects/unitrans_mvp/unitrans_steven/my-app/api
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create `.env.local` file with Supabase credentials:
+   ```
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. Start the server:
+   ```bash
+   node index.js
+   ```
+
+The backend runs on port 3000 by default.
+
+## Frontend Setup
+
+1. Navigate to the web directory:
+   ```bash
+   cd /Users/steven_liu/Projects/unitrans_mvp/unitrans_steven/my-app/web
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create `.env.local` file with Supabase credentials:
+   ```
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+The frontend runs on `http://localhost:5173`
+
+## Getting Supabase Credentials
+
+1. Go to [Supabase Dashboard](https://supabase.com)
+2. Select your project
+3. Navigate to Settings > API
+4. Copy the Project URL and API keys
+
+## Technologies Used
+
+- **Backend:** Node.js, Express.js, Supabase
+- **Frontend:** React, Vite
+- **Database:** Supabase PostgreSQL
+- **Authentication:** Supabase Auth
