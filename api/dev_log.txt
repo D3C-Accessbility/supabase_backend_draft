@@ -1,0 +1,6 @@
+2026-1-24
+Disabled Row Level Security temporarily to test out CRUD operations in API. Need to switch it back on.
+
+2026-1-25
+1. -UNITRANS umoiq has a cap on how many no. of queries you can send to the API using a specific key. You cannot prompt it too often.
+2. -curl "https://webservices.umoiq.com/api/pub/v1/locations/38.557898,-121.720308/predictions" only works if the given coordinates match that of a bus stop in the catalog, not any random coordinates.

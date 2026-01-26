@@ -6,7 +6,8 @@ export default function Header() {
       <nav>
         <Link to="/" style={{ marginRight: '20px' }}>Home</Link>
         <Link to="/auth" style={{ marginRight: '20px' }}>Authentication</Link>
-        <Link to="/notifications">Notifications</Link>
+        <Link to="/notifications" style={{ marginRight: '20px' }}>Notifications</Link>
+        <Link to="/arrivals">Arrivals</Link>
       </nav>
     </header>
   );

@@ -11,7 +11,15 @@ async function umoiqFetch(path) {
         const text = await res.text();
         throw new Error(`UmoIQ error ${res.status}: ${text}`);
     }
-    return res.json();
+    const text = await res.text();
+    if (!text) {
+        return null;
+    }
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        throw new Error(`UmoIQ returned invalid JSON: ${text.slice(0, 200)}`);
+    }
 }
 
 module.exports = { umoiqFetch };
