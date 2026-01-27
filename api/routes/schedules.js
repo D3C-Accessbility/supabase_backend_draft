@@ -42,7 +42,7 @@ router.get('/', async (req, res) => { // works
 });
 
 // POST /schedules - create a new schedule
-router.post('/', async (req, res) => {
+router.post('/', async (req, res) => { // works
   const {
     title,
     origin_stop_id,
@@ -99,25 +99,36 @@ router.get('/:id', async (req, res) => { // works
 });
 
 // PUT /schedules/:id - update schedule
-router.put('/:id', async (req, res) => { // works
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, origin_stop_id, route_id, direction_id, notify_lead_time_min } = req.body;
+  const {
+    title,
+    origin_stop_id,
+    route_id,
+    direction_id,
+    notify_lead_time_min,
+    days,
+    depart_time_local
+  } = req.body;
 
-  const { data, error } = await supabase
-    .from('ride_schedule')
-    .update({
-      title,
-      origin_stop_id,
-      route_id,
-      direction_id,
-      notify_lead_time_min
-    })
-    .eq('id', id)
-    .eq('user_id', req.user.id)
-    .select();
+  const { data, error } = await supabase.rpc('update_schedule_with_times', {
+    p_user_id: req.user.id,
+    p_schedule_id: id,
+    p_title: title,
+    p_origin_stop_id: origin_stop_id,
+    p_route_id: route_id,
+    p_direction_id: direction_id,
+    p_notify_lead_time_min: notify_lead_time_min,
+    p_days: days,
+    p_depart_time_local: depart_time_local
+  });
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data[0]);
+  if (error) {
+    console.error('RPC error full:', error);
+    return res.status(500).json({ error: error.message, details: error });
+  }
+
+  res.json({ id: data });
 });
 
 // DELETE /schedules/:id - delete schedule
