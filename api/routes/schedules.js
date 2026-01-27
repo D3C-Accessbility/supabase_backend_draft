@@ -42,23 +42,45 @@ router.get('/', async (req, res) => { // works
 });
 
 // POST /schedules - create a new schedule
-router.post('/', async (req, res) => { // works
-  const { title, origin_stop_id, route_id, direction_id, notify_lead_time_min } = req.body;
+router.post('/', async (req, res) => {
+  const {
+    title,
+    origin_stop_id,
+    route_id,
+    direction_id,
+    notify_lead_time_min,
+    days,
+    depart_time_local
+  } = req.body;
 
-  const { data, error } = await supabase
-    .from('ride_schedule')
-    .insert({
-      user_id: req.user.id,
-      title,
-      origin_stop_id,
-      route_id,
-      direction_id,
-      notify_lead_time_min
-    })
-    .select();
+  if (!Array.isArray(days) || days.length === 0) {
+    return res.status(400).json({ error: 'days must be a non-empty array' });
+  }
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data[0]);
+  console.log('RPC params:', {
+    days,
+    depart_time_local,
+    daysType: typeof days,
+    isArray: Array.isArray(days),
+    dayTypes: days.map((d) => typeof d)
+  });
+
+  const { data, error } = await supabase.rpc('create_schedule_with_times', {
+    p_user_id: req.user.id,
+    p_title: title,
+    p_origin_stop_id: origin_stop_id,
+    p_route_id: route_id,
+    p_direction_id: direction_id,
+    p_notify_lead_time_min: notify_lead_time_min,
+    p_days: days,
+    p_depart_time_local: depart_time_local
+  });
+
+  if (error) {
+    console.error('RPC error full:', error);
+    return res.status(500).json({ error: error.message, details: error });
+  }
+  res.json({ id: data });
 });
 
 // GET /schedules/:id - get specific schedule

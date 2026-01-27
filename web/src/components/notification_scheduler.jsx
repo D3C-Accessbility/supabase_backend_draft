@@ -10,9 +10,12 @@ export default function NotificationScheduler() {
     origin_stop_id: '',
     route_id: '',
     direction_id: '',
-    notify_lead_time_min: 10
+    notify_lead_time_min: 10,
+    depart_time_local: '',
+    days: []
   });
   const [submitting, setSubmitting] = useState(false);
+  const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   useEffect(() => {
     // Get initial session
@@ -64,6 +67,15 @@ export default function NotificationScheduler() {
     }));
   };
 
+  const handleDayToggle = (day) => {
+    setFormData(prev => {
+      const nextDays = prev.days.includes(day)
+        ? prev.days.filter(d => d !== day)
+        : [...prev.days, day];
+      return { ...prev, days: nextDays };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!session) return;
@@ -86,7 +98,9 @@ export default function NotificationScheduler() {
           origin_stop_id: '',
           route_id: '',
           direction_id: '',
-          notify_lead_time_min: 10
+          notify_lead_time_min: 10,
+          depart_time_local: '',
+          days: []
         });
         fetchSchedules();
       } else {
@@ -185,6 +199,31 @@ export default function NotificationScheduler() {
             onChange={handleInputChange}
             required
           />
+        </div>
+        <div>
+          <label>Depart Time (local):</label>
+          <input
+            type="time"
+            name="depart_time_local"
+            value={formData.depart_time_local}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Days:</label>
+          <div>
+            {dayOptions.map(day => (
+              <label key={day} style={{ marginRight: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.days.includes(day)}
+                  onChange={() => handleDayToggle(day)}
+                />
+                {day}
+              </label>
+            ))}
+          </div>
         </div>
         <button type="submit" disabled={submitting}>
           {submitting ? 'Creating...' : 'Create Schedule'}
