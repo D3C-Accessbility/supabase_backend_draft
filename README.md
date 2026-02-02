@@ -42,6 +42,28 @@ The backend contains the following API endpoints:
 
 The backend runs on port 3000 by default.
 
+## OpenTripPlanner (OTP) Setup
+
+1. Verify you have Java 1.8+ installed:
+   ```bash
+   java -version
+   ```
+
+2. Simple one-step server (build + serve without saving a graph):
+   ```bash
+   java -Xmx2G -jar otp-shaded-2.8.1.jar --build --serve /home/username/otp
+   ```
+
+3. Build and save a graph for faster startup later:
+   ```bash
+   java -Xmx2G -jar otp-shaded-2.8.1.jar --build --save .
+   ```
+
+4. Start OTP using the saved graph:
+   ```bash
+   java -Xmx2G -jar otp-shaded-2.8.1.jar --load .
+   ```
+
 ## Frontend Setup
 
 1. Navigate to the web directory:
