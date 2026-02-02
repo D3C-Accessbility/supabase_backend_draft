@@ -44,22 +44,28 @@ The backend runs on port 3000 by default.
 
 ## OpenTripPlanner (OTP) Setup
 
-1. Verify you have Java 1.8+ installed:
+1. Download the OTP shaded JAR into the `api/data/open_trip_planner` folder:
+   ```bash
+   cd your-project-directory/api/data/open_trip_planner
+   curl -L -o otp-shaded-2.8.1.jar https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/otp-shaded-2.8.1.jar
+   ```
+
+2. Verify you have Java 1.8+ installed:
    ```bash
    java -version
    ```
 
-2. Simple one-step server (build + serve without saving a graph):
+3. Simple one-step server (build + serve without saving a graph):
    ```bash
    java -Xmx2G -jar otp-shaded-2.8.1.jar --build --serve /home/username/otp
    ```
 
-3. Build and save a graph for faster startup later:
+4. Build and save a graph for faster startup later:
    ```bash
    java -Xmx2G -jar otp-shaded-2.8.1.jar --build --save .
    ```
 
-4. Start OTP using the saved graph:
+5. Start OTP using the saved graph:
    ```bash
    java -Xmx2G -jar otp-shaded-2.8.1.jar --load .
    ```
