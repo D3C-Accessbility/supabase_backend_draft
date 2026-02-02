@@ -55,20 +55,12 @@ The backend runs on port 3000 by default.
    java -version
    ```
 
-3. Simple one-step server (build + serve without saving a graph):
-   ```bash
-   java -Xmx2G -jar otp-shaded-2.8.1.jar --build --serve /home/username/otp
-   ```
-
-4. Build and save a graph for faster startup later:
-   ```bash
-   java -Xmx2G -jar otp-shaded-2.8.1.jar --build --save .
-   ```
-
-5. Start OTP using the saved graph:
+3. Start OTP using the saved graph:
    ```bash
    java -Xmx2G -jar otp-shaded-2.8.1.jar --load .
    ```
+
+OTP's Grizzly server runs at `http://localhost:8080` by default.
 
 ## Frontend Setup
 
