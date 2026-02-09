@@ -25,3 +25,6 @@ dist-ssr
 
 .env.local
 otp-shaded-2.8.1.jar
+
+# OpenTripPlanner source
+open_trip_planner/OpenTripPlanner/

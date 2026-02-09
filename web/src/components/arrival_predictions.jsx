@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "/api").replace(
+  /\/$/, // remove trailing slash if present
+  ""
+); // replace VITE_API_BASE_URL with the actual base URL of your API, in production
 
 function formatUpdatedAt(date) {
   if (!date) return "";
@@ -69,17 +72,16 @@ export default function ArrivalPredictions() {
     setError("");
 
     try {
-      const url = new URL("/umo_routes/predictions/near", API_BASE);
       const latFixed = Number(location.lat).toFixed(6);
       const lonFixed = Number(location.lon).toFixed(6);
-      url.searchParams.set("lat", latFixed);
-      url.searchParams.set("lon", lonFixed);
-      console.log("[arrivals] requesting", url.toString());
+      const params = new URLSearchParams({ lat: latFixed, lon: lonFixed });
+      const endpoint = `${API_BASE}/umo_routes/predictions/near?${params.toString()}`;
+      console.log("[arrivals] requesting", endpoint);
       console.log(
         `curl -s "${API_BASE}/umo_routes/predictions/near?lat=${latFixed}&lon=${lonFixed}"`
       );
 
-      const response = await fetch(url.toString());
+      const response = await fetch(endpoint);
       console.log("[arrivals] response status", response.status);
       if (!response.ok) {
         throw new Error(`Request failed (${response.status})`);
