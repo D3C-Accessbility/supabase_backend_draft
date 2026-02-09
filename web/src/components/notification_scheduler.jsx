@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import supabase from '../lib/supabase';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+
 export default function NotificationScheduler() {
   const [session, setSession] = useState(null);
   const [schedules, setSchedules] = useState([]);
@@ -50,7 +52,7 @@ export default function NotificationScheduler() {
   const fetchSchedules = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('http://localhost:3000/schedules', {
+      const response = await fetch(`${API_BASE}/schedules`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -101,7 +103,7 @@ export default function NotificationScheduler() {
 
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:3000/schedules/${schedule.id}/times`, {
+      const response = await fetch(`${API_BASE}/schedules/${schedule.id}/times`, {
         headers: {
           'Authorization': `Bearer ${currentSession.access_token}`
         }
@@ -152,7 +154,7 @@ export default function NotificationScheduler() {
 
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:3000/schedules', {
+      const response = await fetch(`${API_BASE}/schedules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +183,7 @@ export default function NotificationScheduler() {
 
     setEditSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:3000/schedules/${editingId}`, {
+      const response = await fetch(`${API_BASE}/schedules/${editingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +211,7 @@ export default function NotificationScheduler() {
 
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:3000/schedules/${scheduleId}`, {
+      const response = await fetch(`${API_BASE}/schedules/${scheduleId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${currentSession.access_token}`

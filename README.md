@@ -7,6 +7,34 @@ A full-stack web application for Unitrans bus services with schedule management 
 - `api/` - Backend Express.js server
 - `web/` - Frontend React application
 
+## Docker Quick Start
+
+1. Start Docker Desktop (or ensure the Docker daemon is running):
+   ```bash
+   docker info
+   ```
+
+2. From the project root (`my-app`), build and start containers:
+   ```bash
+   cd your-project-directory
+   docker compose up --build
+   ```
+
+3. Open the frontend:
+   - `http://localhost:5173`
+
+4. Verify backend through frontend proxy:
+   - `http://localhost:5173/api/health`
+
+5. Stop containers:
+   ```bash
+   docker compose down
+   ```
+
+Notes:
+- The `web` service is exposed on port `5173`.
+- The `api` service is internal to Docker Compose and is reachable by `web`, but not published directly to your host.
+
 ## API Routes
 
 The backend contains the following API endpoints:
