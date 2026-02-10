@@ -1,19 +1,20 @@
+/**
+ * Real-time arrivals near user location.
+ * Uses GET /umo_routes/predictions/near?lat=&lon= via unitransApi.
+ * Loading and error states included.
+ */
 import { useEffect, useMemo, useState } from "react";
-
-const API_BASE = "http://localhost:3000";
+import { getPredictionsNear } from "../lib/unitransApi.js";
 
 function formatUpdatedAt(date) {
   if (!date) return "";
-  return date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 function getNextMinutes(predictions) {
-  const mins = predictions
-    .map((prediction) => prediction.minutes)
-    .filter((value) => typeof value === "number" && Number.isFinite(value));
+  const mins = (predictions || [])
+    .map((p) => p.minutes)
+    .filter((v) => typeof v === "number" && Number.isFinite(v));
   return mins.length ? Math.min(...mins) : null;
 }
 
@@ -26,10 +27,7 @@ export default function ArrivalPredictions() {
 
   const sortedBundles = useMemo(() => {
     return [...bundles]
-      .map((bundle) => ({
-        ...bundle,
-        nextMinutes: getNextMinutes(bundle.predictions || []),
-      }))
+      .map((b) => ({ ...b, nextMinutes: getNextMinutes(b.predictions || []) }))
       .sort((a, b) => {
         const aMin = a.nextMinutes ?? Number.POSITIVE_INFINITY;
         const bMin = b.nextMinutes ?? Number.POSITIVE_INFINITY;
@@ -39,19 +37,14 @@ export default function ArrivalPredictions() {
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported on this browser.");
+      setError("Geolocation is not supported.");
       return;
     }
-
     setStatus("locating");
     setError("");
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const nextCoords = {
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-        };
+        const nextCoords = { lat: position.coords.latitude, lon: position.coords.longitude };
         setCoords(nextCoords);
         fetchPredictions(nextCoords);
       },
@@ -63,48 +56,21 @@ export default function ArrivalPredictions() {
     );
   };
 
-  const fetchPredictions = async (location = coords) => {
+  const fetchPredictions = async (location) => {
     if (!location) return;
     setStatus("loading");
     setError("");
-
     try {
-      const url = new URL("/umo_routes/predictions/near", API_BASE);
-      const latFixed = Number(location.lat).toFixed(6);
-      const lonFixed = Number(location.lon).toFixed(6);
-      url.searchParams.set("lat", latFixed);
-      url.searchParams.set("lon", lonFixed);
-      console.log("[arrivals] requesting", url.toString());
-      console.log(
-        `curl -s "${API_BASE}/umo_routes/predictions/near?lat=${latFixed}&lon=${lonFixed}"`
-      );
-
-      const response = await fetch(url.toString());
-      console.log("[arrivals] response status", response.status);
-      if (!response.ok) {
-        throw new Error(`Request failed (${response.status})`);
-      }
-
-      const data = await response.json();
-      console.log("[arrivals] response data", data);
+      const data = await getPredictionsNear(location.lat, location.lon);
       setBundles(Array.isArray(data) ? data : []);
-      if (!Array.isArray(data)) {
-        console.warn("[arrivals] non-array response", data);
-      }
-
-      const serverTimestamps = (Array.isArray(data) ? data : [])
-        .map((bundle) => bundle.serverTimestamp)
-        .filter((value) => typeof value === "number");
-      console.log("[arrivals] server timestamps", serverTimestamps);
-      const nextUpdatedAt = serverTimestamps.length
-        ? new Date(Math.max(...serverTimestamps))
-        : new Date();
-      setUpdatedAt(nextUpdatedAt);
+      const timestamps = (Array.isArray(data) ? data : [])
+        .map((b) => b.serverTimestamp)
+        .filter((v) => typeof v === "number");
+      setUpdatedAt(timestamps.length ? new Date(Math.max(...timestamps)) : new Date());
       setStatus("ready");
-    } catch (fetchError) {
-      console.error("[arrivals] fetch error", fetchError);
+    } catch (err) {
       setStatus("error");
-      setError(fetchError.message || "Failed to fetch predictions.");
+      setError(err.message || "Failed to fetch predictions.");
     }
   };
 
@@ -114,10 +80,8 @@ export default function ArrivalPredictions() {
 
   return (
     <div>
-      <h2>Nearby Departures</h2>
-      <div>
-        Updated: {updatedAt ? formatUpdatedAt(updatedAt) : "--"}
-      </div>
+      <h2>Nearby departures</h2>
+      <div>Updated: {updatedAt ? formatUpdatedAt(updatedAt) : "--"}</div>
       <button
         type="button"
         onClick={() => (coords ? fetchPredictions(coords) : requestLocation())}
@@ -125,51 +89,32 @@ export default function ArrivalPredictions() {
       >
         {coords ? "Refresh" : "Use my location"}
       </button>
-
       {coords && (
-        <div>
-          Location: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
-        </div>
+        <div>Location: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}</div>
       )}
-
       {status === "locating" && <div>Requesting your location...</div>}
       {status === "loading" && <div>Loading predictions...</div>}
-      {error && <div>{error}</div>}
-
+      {error && <div>Error: {error}</div>}
       {status === "ready" && sortedBundles.length === 0 && (
         <div>No nearby arrivals found.</div>
       )}
-
       <div>
         {sortedBundles.map((bundle) => {
-          const routeId = bundle.route?.id || "?";
-          const stopName = bundle.stop?.name || "Unknown stop";
-          const direction =
-            bundle.predictions?.find(
-              (prediction) =>
-                prediction.direction?.destinationName ||
-                prediction.direction?.name
-            )?.direction || {};
-          const directionLabel =
-            direction.destinationName || direction.name || "";
+          const routeId = bundle.route?.id ?? "?";
+          const stopName = bundle.stop?.name ?? "Unknown stop";
+          const dir = bundle.predictions?.find(
+            (p) => p.direction?.destinationName || p.direction?.name
+          )?.direction ?? {};
+          const directionLabel = dir.destinationName ?? dir.name ?? "";
           const minutes = (bundle.predictions || [])
-            .map((prediction) => prediction.minutes)
-            .filter((value) => typeof value === "number")
+            .map((p) => p.minutes)
+            .filter((v) => typeof v === "number")
             .slice(0, 3);
-
           return (
             <div key={`${routeId}-${bundle.stop?.id}`}>
               <div>{stopName}</div>
-              <div>Route: {routeId}</div>
-              <div>Direction: {directionLabel || "Destination TBD"}</div>
-              <div>Agency: Unitrans ASUCD/City of Davis</div>
-              <div>
-                {minutes.length
-                  ? minutes.map((value, index) => (
-                      <span key={`${routeId}-${index}`}>{value} min </span>
-                    ))
-                  : "No times"}
-              </div>
+              <div>Route: {routeId} {directionLabel && `→ ${directionLabel}`}</div>
+              <div>{minutes.length ? minutes.map((m, i) => <span key={i}>{m} min </span>) : "No times"}</div>
               <hr />
             </div>
           );
