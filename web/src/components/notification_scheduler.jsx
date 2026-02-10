@@ -1,10 +1,23 @@
-import { useState, useEffect } from 'react';
-import supabase from '../lib/supabase';
+import { useState, useEffect } from "react";
+import supabase from "../lib/supabase";
+import {
+  getSchedules,
+  getScheduleTimes,
+  createSchedule,
+  updateSchedule,
+  deleteSchedule,
+} from "../lib/unitransApi.js";
+
+// Get Supabase access token for authenticated API calls
+function getToken() {
+  return supabase.auth.getSession().then(({ data: { session } }) => session?.access_token ?? null);
+}
 
 export default function NotificationScheduler() {
   const [session, setSession] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
   const emptyForm = {
     title: '',
     origin_stop_id: '',
@@ -48,17 +61,13 @@ export default function NotificationScheduler() {
   }, []);
 
   const fetchSchedules = async () => {
+    setApiError("");
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('http://localhost:3000/schedules', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-      const data = await response.json();
-      setSchedules(data);
+      const data = await getSchedules(getToken);
+      setSchedules(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching schedules:', error);
+      console.error("Error fetching schedules:", error);
+      setApiError(error.message || "Failed to load schedules.");
     } finally {
       setLoading(false);
     }
@@ -98,26 +107,16 @@ export default function NotificationScheduler() {
       days: []
     });
     setEditLoading(true);
-
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:3000/schedules/${schedule.id}/times`, {
-        headers: {
-          'Authorization': `Bearer ${currentSession.access_token}`
-        }
-      });
-      const data = await response.json();
+      const data = await getScheduleTimes(schedule.id, getToken);
       const days = Array.isArray(data) ? data.map((row) => row.day) : [];
       const departTime = Array.isArray(data) && data.length > 0
         ? normalizeTime(data[0].depart_time_local)
-        : '';
-      setEditFormData(prev => ({
-        ...prev,
-        days,
-        depart_time_local: departTime
-      }));
+        : "";
+      setEditFormData((prev) => ({ ...prev, days, depart_time_local: departTime }));
     } catch (error) {
-      console.error('Error loading schedule times:', error);
+      console.error("Error loading schedule times:", error);
+      setApiError(error.message || "Failed to load schedule times.");
     } finally {
       setEditLoading(false);
     }
@@ -149,27 +148,15 @@ export default function NotificationScheduler() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!session) return;
-
+    setApiError("");
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:3000/schedules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        // Reset form and refetch schedules
-        setFormData(emptyForm);
-        fetchSchedules();
-      } else {
-        console.error('Error creating schedule');
-      }
+      await createSchedule(formData, getToken);
+      setFormData(emptyForm);
+      fetchSchedules();
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error("Error creating schedule:", error);
+      setApiError(error.message || "Failed to create schedule.");
     } finally {
       setSubmitting(false);
     }
@@ -178,51 +165,30 @@ export default function NotificationScheduler() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!session || !editingId) return;
-
+    setApiError("");
     setEditSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:3000/schedules/${editingId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(editFormData)
-      });
-
-      if (response.ok) {
-        setEditingId(null);
-        setEditFormData(emptyForm);
-        fetchSchedules();
-      } else {
-        console.error('Error updating schedule');
-      }
+      await updateSchedule(editingId, editFormData, getToken);
+      setEditingId(null);
+      setEditFormData(emptyForm);
+      fetchSchedules();
     } catch (error) {
-      console.error('Error updating schedule:', error);
+      console.error("Error updating schedule:", error);
+      setApiError(error.message || "Failed to update schedule.");
     } finally {
       setEditSubmitting(false);
     }
   };
 
   const handleDelete = async (scheduleId) => {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
-
+    if (!confirm("Are you sure you want to delete this schedule?")) return;
+    setApiError("");
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const response = await fetch(`http://localhost:3000/schedules/${scheduleId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${currentSession.access_token}`
-        }
-      });
-
-      if (response.ok) {
-        fetchSchedules();
-      } else {
-        console.error('Error deleting schedule');
-      }
+      await deleteSchedule(scheduleId, getToken);
+      fetchSchedules();
     } catch (error) {
-      console.error('Error deleting schedule:', error);
+      console.error("Error deleting schedule:", error);
+      setApiError(error.message || "Failed to delete schedule.");
     }
   };
 
@@ -238,6 +204,7 @@ export default function NotificationScheduler() {
     <div>
       <h2>Notification Scheduler</h2>
       <p>User: {session.user.email}</p>
+      {apiError && <div>Error: {apiError}</div>}
 
       <h3>Create New Schedule</h3>
       <form onSubmit={handleSubmit}>
