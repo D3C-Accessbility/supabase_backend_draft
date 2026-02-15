@@ -25,6 +25,6 @@ dist-ssr
 
 .env.local
 
-# open trip planner
-otp-shaded-2.8.1.jar
-otp-react-redux/
+# OpenTripPlanner artifacts (repo root)
+/otp-shaded-2.8.1.jar
+/otp-react-redux/
