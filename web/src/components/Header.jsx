@@ -8,6 +8,7 @@ export default function Header() {
         <Link to="/routes" style={{ marginRight: "20px" }}>Routes</Link>
         <Link to="/stops" style={{ marginRight: "20px" }}>Stops</Link>
         <Link to="/arrivals" style={{ marginRight: "20px" }}>Arrivals</Link>
+        <Link to="/navigation" style={{ marginRight: "20px" }}>Navigation</Link>
         <Link to="/notifications" style={{ marginRight: "20px" }}>Schedules</Link>
         <Link to="/auth">Auth</Link>
       </nav>

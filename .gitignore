@@ -24,4 +24,7 @@ dist-ssr
 *.sw?
 
 .env.local
+
+# open trip planner
 otp-shaded-2.8.1.jar
+otp-react-redux/

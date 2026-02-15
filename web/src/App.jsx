@@ -9,6 +9,7 @@ import RoutesList from "./components/RoutesList";
 import RouteDetail from "./components/RouteDetail";
 import StopsList from "./components/StopsList";
 import StopDetail from "./components/StopDetail";
+import Navigation from "./components/Navigation";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/stops/:stopId" element={<StopDetail />} />
         <Route path="/notifications" element={<NotificationScheduler />} />
         <Route path="/arrivals" element={<ArrivalPredictions />} />
+        <Route path="/navigation" element={<Navigation />} />
       </Routes>
     </Router>
   );
