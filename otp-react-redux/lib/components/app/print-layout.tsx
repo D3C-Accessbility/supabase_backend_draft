@@ -1,0 +1,110 @@
+import { connect } from 'react-redux'
+import { FormattedMessage, injectIntl, IntlShape } from 'react-intl'
+import { Itinerary } from '@opentripplanner/types'
+import coreUtils from '@opentripplanner/core-utils'
+import React, { Component } from 'react'
+
+import * as formActions from '../../actions/form'
+import * as narrativeActions from '../../actions/narrative'
+import { AppReduxState } from '../../util/state-types'
+import {
+  getActiveItineraries,
+  getActiveSearch,
+  getVisibleItineraryIndex
+} from '../../util/state'
+import { summarizeQuery } from '../form/user-settings-i18n'
+import { User } from '../user/types'
+import DefaultMap from '../map/default-map'
+
+import TripPreviewLayoutBase from './trip-preview-layout-base'
+
+type Props = {
+  // TODO: Typescript activeSearch type
+  activeSearch: any
+  intl: IntlShape
+  itinerary: Itinerary
+  location?: { search?: string }
+  parseUrlQueryString: (params?: any, source?: string) => void
+  setVisibleItinerary: (params: { index: number }) => void
+  user: User
+}
+
+class PrintLayout extends Component<Props> {
+  _close = () => {
+    window.location.replace(String(window.location).replace('print/', ''))
+  }
+
+  componentDidMount() {
+    const { itinerary, location, parseUrlQueryString } = this.props
+
+    // Parse the URL query parameters, if present
+    if (!itinerary && location && location.search) {
+      parseUrlQueryString()
+    }
+  }
+
+  componentDidUpdate() {
+    const { activeSearch, itinerary, setVisibleItinerary } = this.props
+
+    // Display the desired itinerary on map.
+    if (!itinerary) {
+      const { ui_activeItinerary: uiActiveItinerary } =
+        coreUtils.query.getUrlParams() || {}
+      if (
+        activeSearch &&
+        uiActiveItinerary !== undefined &&
+        uiActiveItinerary !== '-1'
+      ) {
+        setVisibleItinerary({ index: +uiActiveItinerary })
+      }
+    }
+  }
+
+  render() {
+    const { activeSearch, intl, itinerary, user } = this.props
+    const printVerb = intl.formatMessage({ id: 'common.forms.print' })
+
+    return (
+      <TripPreviewLayoutBase
+        header={<FormattedMessage id="components.PrintLayout.itinerary" />}
+        itinerary={itinerary}
+        mapElement={
+          <div className="map-container">
+            {/* FIXME: Improve reframing/setting map bounds when itinerary is received. */}
+            <DefaultMap />
+          </div>
+        }
+        onClose={this._close}
+        subTitle={
+          activeSearch &&
+          summarizeQuery(activeSearch.query, intl, user.savedLocations)
+        }
+        title={printVerb}
+      />
+    )
+  }
+}
+
+// connect to the redux store
+
+const mapStateToProps = (state: AppReduxState) => {
+  const activeSearch = getActiveSearch(state)
+  const { localUser, loggedInUser } = state.user
+  const user = loggedInUser || localUser
+  const itineraries = getActiveItineraries(state)
+  return {
+    activeSearch,
+    itinerary: itineraries[getVisibleItineraryIndex(state)] as Itinerary,
+    user
+  }
+}
+
+const mapDispatchToProps = {
+  parseUrlQueryString: formActions.parseUrlQueryString,
+  setVisibleItinerary: narrativeActions.setVisibleItinerary
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(injectIntl(PrintLayout))
