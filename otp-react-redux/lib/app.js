@@ -47,7 +47,7 @@ if (bugsnagApiKey) {
     plugins: [new BugsnagPluginReact()]
   })
 }
-const ErrorBoundary = bugsnagApiKey
+const ErrorBoundary = bugsnagApiKey // React render/lifecycle errors in ResponsiveWebapp subtree are captured/reported.
   ? Bugsnag.getPlugin('react').createErrorBoundary(React)
   : React.Fragment
 

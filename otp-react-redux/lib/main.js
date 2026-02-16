@@ -18,7 +18,7 @@ import * as jsConfig from '../tmp/config.js'
 // Loads a configuration JavaScript file from the /tmp folder that contains customizations.
 import otpConfig from '../tmp/config.yml'
 
-import Webapp from './app'
+import AppShell from './web-shell/AppShell'
 
 import {
   createCallTakerReducer,
@@ -55,7 +55,7 @@ const store = createStore(
 // render the app
 render(
   <Provider store={store}>
-    <Webapp />
+    <AppShell />
   </Provider>,
   document.getElementById('main')
 )

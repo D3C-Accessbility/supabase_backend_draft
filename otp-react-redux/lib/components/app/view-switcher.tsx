@@ -7,6 +7,7 @@ import Link from '../util/link'
  * This component is a switcher between
  * the main views of the application.
  */
+// View-switcher tabs are just links to those paths in view-switcher.tsx (line 21).
 const ViewSwitcher = (): JSX.Element => {
   const intl = useIntl()
   return (

@@ -6,6 +6,8 @@
 # The apiKey, boundary, focus point, and baseUrl in the 'geocoder' section;
 # All locally relevant modes of transport in the 'modes: transitModes' section;
 # If needed, any language codes and names in the 'language' section.
+title: BusBuddy
+
 api:
   host: http://localhost
   # Path will be deprecated once the REST API is deprecated, which will be soon.
