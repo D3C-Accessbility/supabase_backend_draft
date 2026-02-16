@@ -27,3 +27,5 @@ dist-ssr
 
 # OpenTripPlanner artifacts (repo root)
 /otp-shaded-2.8.1.jar
+/otp-react-redux/node_modules/
+/otp-react-redux/dist/
