@@ -1,11 +1,16 @@
 /**
  * Stops: search destination, list results with link to stop detail.
- * Optional "Nearby" section with location + predictions. Map placeholder.
+ * Nearby arrivals + map of stops (from search or nearby).
  */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
 import { searchStops, getPredictionsNear } from "../lib/unitransApi.js";
 import "../App.css";
+import "leaflet/dist/leaflet.css";
+
+const DAVIS_CENTER = [38.5449, -121.7405];
 
 export default function StopsPage() {
   const [query, setQuery] = useState("");
@@ -61,14 +66,32 @@ export default function StopsPage() {
     const routeTitle = b.route?.title ?? routeId;
     const stopName = b.stop?.name ?? "Stop";
     const stopId = b.stop?.id;
+    const lat = b.stop?.lat;
+    const lon = b.stop?.lon;
     const preds = b.predictions || [];
     const mins = preds.map((p) => p.minutes).filter((m) => typeof m === "number" && Number.isFinite(m));
     const etaMin = mins.length ? Math.min(...mins) : null;
     const dir = preds[0]?.direction;
     const dest = dir?.destinationName ?? dir?.name ?? "";
     const delay = preds[0]?.delay;
-    return { routeId, routeTitle, stopName, stopId, etaMin, dest, delay };
+    return { routeId, routeTitle, stopName, stopId, lat, lon, etaMin, dest, delay };
   });
+
+  const mapMarkers = [];
+  if (searchResults.length > 0) {
+    searchResults.forEach((s) => {
+      if (s.lat != null && s.lon != null) mapMarkers.push({ lat: s.lat, lon: s.lon, name: s.name ?? s.id });
+    });
+  } else if (nearbyRows.length > 0) {
+    nearbyRows.forEach((r) => {
+      if (r.lat != null && r.lon != null) mapMarkers.push({ lat: r.lat, lon: r.lon, name: r.stopName });
+    });
+  }
+  const mapCenter = mapMarkers.length > 0
+    ? [mapMarkers[0].lat, mapMarkers[0].lon]
+    : coords
+      ? [coords.lat, coords.lon]
+      : DAVIS_CENTER;
 
   return (
     <div>
@@ -167,7 +190,45 @@ export default function StopsPage() {
         </div>
       )}
 
-      <div className="map-placeholder">Map (stop locations)</div>
+      <div className="section-title">Map</div>
+      <div style={{ height: 220, borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)" }}>
+        <MapContainer
+          center={mapCenter}
+          zoom={mapMarkers.length > 0 ? 15 : 14}
+          style={{ height: "100%", width: "100%" }}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {coords && (
+            <Marker
+              position={[coords.lat, coords.lon]}
+              icon={L.divIcon({
+                html: '<span style="background:#3b82f6;color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;">●</span>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+              })}
+            >
+              <Popup>You</Popup>
+            </Marker>
+          )}
+          {mapMarkers.map((m, i) => (
+            <Marker
+              key={i}
+              position={[m.lat, m.lon]}
+              icon={L.divIcon({
+                html: '<span style="background:var(--accent);color:white;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;">🚌</span>',
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+              })}
+            >
+              <Popup>{m.name}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
     </div>
   );
 }

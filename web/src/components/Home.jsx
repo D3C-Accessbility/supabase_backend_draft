@@ -94,10 +94,21 @@ export default function Home() {
   };
 
   const handleFindBuses = () => {
+    const fromStopObj = boardingStops.find((s) => String(s.id) === String(boardingStop));
+    const toStopObj = goingStops.find((s) => String(s.id) === String(goingStop));
+    if (fromStopObj && toStopObj && fromStopObj.lat != null && toStopObj.lat != null) {
+      navigate("/plan", {
+        state: {
+          from: { lat: fromStopObj.lat, lon: fromStopObj.lon, name: fromStopObj.name, routeId: boardingRoute },
+          to: { lat: toStopObj.lat, lon: toStopObj.lon, name: toStopObj.name, routeId: goingRoute },
+        },
+      });
+      return;
+    }
     if (boardingStop && boardingRoute) {
       navigate(`/stops/${encodeURIComponent(boardingStop)}?route=${encodeURIComponent(boardingRoute)}`);
     } else {
-      navigate("/stops");
+      navigate("/plan");
     }
   };
 

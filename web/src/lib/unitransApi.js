@@ -93,3 +93,27 @@ export async function deleteSchedule(id, getToken) {
 export async function getScheduleTimes(scheduleId, getToken) {
   return api(`schedules/${encodeURIComponent(scheduleId)}/times`, { auth: true }, getToken);
 }
+
+// --- OpenTripPlanner (trip planning) ---
+
+/**
+ * GET /otp/plan?fromLat=&fromLon=&toLat=&toLon=&date=&time=&arriveBy=
+ * Returns OTP plan response: { plan: { itineraries: [...] } }
+ */
+export async function planTrip({ fromLat, fromLon, toLat, toLon, date, time, arriveBy }) {
+  const params = new URLSearchParams({
+    fromLat: String(fromLat),
+    fromLon: String(fromLon),
+    toLat: String(toLat),
+    toLon: String(toLon),
+  });
+  if (date) params.set("date", date);
+  if (time) params.set("time", time);
+  if (arriveBy != null) params.set("arriveBy", arriveBy ? "true" : "false");
+  return api(`otp/plan?${params.toString()}`);
+}
+
+/** GET /otp/health - check if OTP is reachable */
+export async function getOtpHealth() {
+  return api("otp/health");
+}

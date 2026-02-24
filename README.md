@@ -1,126 +1,85 @@
-# Unitrans MVP
+# Unitrans UC Davis Bus App
 
-A full-stack web application for Unitrans bus services with schedule management and navigation.
+Full-stack app for Unitrans bus services: real-time arrivals, trip planning with OpenTripPlanner, schedules, and maps.
+
+## Project structure
+
+| Folder | Purpose |
+|--------|---------|
+| `api/` | Express backend: UmoIQ proxy (routes, stops, predictions), Supabase schedules, **OTP proxy** (trip plan) |
+| `web/` | Main frontend: React + Vite. Home, Stops (search + map), **Plan** (OTP trip + map), My Schedule, Settings |
+| `open_trip_planner/` | OTP data (GTFS, graph). Run OTP Java server here for trip planning. |
+| `otp-react-redux/` | Optional standalone OTP trip planner (separate app). |
+
+## Quick start
+
+1. **Start OpenTripPlanner** (for Plan page and trip maps):
+   ```bash
+   cd open_trip_planner
+   # Download the OTP JAR once (if you don't have it):
+   curl -L -o otp-shaded-2.8.1.jar https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/otp-shaded-2.8.1.jar
+   # Run OTP (requires Java 8+). Script defaults to port 9080 to avoid Docker:
+   ./download-and-run.sh
+   # Or: java -Xmx2G -jar otp-shaded-2.8.1.jar --port 9080 --load .
+   ```
+   OTP runs at `http://localhost:9080` (script default). Set `OTP_URL=http://localhost:9080` in `api/.env.local` so the API can reach it.
+
+2. **Start the API**:
+   ```bash
+   cd api
+   npm install
+   # Add .env.local with SUPABASE_*, UMO_API_KEY
+   node index.js
+   ```
+   API runs at `http://localhost:3000`.
+
+3. **Start the web app**:
+   ```bash
+   cd web
+   npm install
+   # Optional: .env with VITE_SUPABASE_*, VITE_API_URL (default http://localhost:3000)
+   npm run dev
+   ```
+   Web runs at `http://localhost:5173`.
 
 ## Features
 
-- Single-page library for navigation (`otp-react-redux`).
+- **Home**: Route planning card (boarding from / going to), “Find Buses” → Plan page or stop arrivals; Buses Running Now (location + real-time predictions).
+- **Stops**: Search stops by name, nearby arrivals with Live ETA, **map** with stop markers and your location.
+- **Plan**: OpenTripPlanner trip planning. Pick from/to stops, date/time, “Find trip” → itineraries + **map** with route polyline.
+- **My Schedule**: Grid/list of your saved schedules (auth); link to manage notifications.
+- **Settings**: Notifications, theme (light/dark/system), preferences (stored in localStorage).
 
-## Project Structure
+## API overview
 
-- `api/`: Custom backend (Express.js).
-- `open_trip_planner/`: OpenTripPlanner Java application (runs Grizzly server).
-- `otp-react-redux/`: Main navigation web app.
-- `web/`: Legacy frontend framework (deprecated).
+| Path | Description |
+|------|-------------|
+| `GET /umo_routes/agency` | Agency info |
+| `GET /umo_routes/routes` | All routes |
+| `GET /umo_routes/routes/:route/stops` | Stops for a route |
+| `GET /umo_routes/predictions?stop=&route=` | Predictions at stop |
+| `GET /umo_routes/predictions/near?lat=&lon=` | Predictions near location |
+| `GET /umo_routes/stops/search?query=` | Search stops by name |
+| `GET /otp/plan?fromLat=&fromLon=&toLat=&toLon=&date=&time=` | OTP trip plan (proxies to OTP) |
+| `GET /otp/health` | Check OTP is reachable |
+| `GET/POST/PUT/DELETE /schedules*` | User schedules (auth) |
 
-## Quick Start (Recommended)
+## Environment
 
-1. Start the Grizzly server in `open_trip_planner` first:
-   ```bash
-   cd open_trip_planner
-   java -Xmx2G -jar otp-shaded-2.8.1.jar --load .
-   ```
+**api/.env.local**
 
-2. Start the custom backend in `api`:
-   ```bash
-   cd api
-   node index.js
-   ```
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` – Supabase
+- `UMO_API_KEY` – UmoIQ (Unitrans real-time)
+- `OTP_URL` – optional, default `http://localhost:8080`. Use `http://localhost:9080` if you start OTP with the script (it uses port 9080 to avoid Docker).
+- `OTP_ROUTER_ID` – optional, default `default`
 
-3. Build and start `otp-react-redux`:
-   ```bash
-   cd otp-react-redux
-   yarn build
-   yarn start
-   ```
+**web/.env**
 
-## Backend Setup
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY` – Supabase (auth)
+- `VITE_API_URL` – optional, default `http://localhost:3000`
 
-1. Navigate to the API directory:
-   ```bash
-   cd api
-   ```
+## Tech stack
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create `.env.local` with Supabase credentials:
-   ```env
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. Start the server:
-   ```bash
-   node index.js
-   ```
-
-The backend runs on port `3000` by default.
-
-## OpenTripPlanner (OTP) Setup
-
-1. Navigate to `open_trip_planner`:
-   ```bash
-   cd open_trip_planner
-   ```
-
-2. Download the OTP shaded JAR (if needed):
-   ```bash
-   curl -L -o otp-shaded-2.8.1.jar https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/2.8.1/otp-shaded-2.8.1.jar
-   ```
-
-3. Verify Java 8+ is installed:
-   ```bash
-   java -version
-   ```
-
-4. Start OTP using the saved graph:
-   ```bash
-   java -Xmx2G -jar otp-shaded-2.8.1.jar --load .
-   ```
-
-OTP's Grizzly server runs at `http://localhost:8080` by default.
-
-## Frontend Setup (Deprecated)
-
-1. Navigate to the web directory:
-   ```bash
-   cd web
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create `.env.local` with Supabase credentials:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-The deprecated frontend runs on `http://localhost:5173`.
-
-## Getting Supabase Credentials
-
-1. Go to [Supabase Dashboard](https://supabase.com).
-2. Select your project.
-3. Navigate to **Settings > API**.
-4. Copy the project URL and API keys.
-
-## Technologies Used
-
-- Backend: Node.js, Express.js, Supabase
-- Frontend: React, Vite, Redux
-- Database: Supabase PostgreSQL
-- Authentication: Supabase Auth
-- Routing Engine: OpenTripPlanner
+- **Backend:** Node.js, Express, Supabase, UmoIQ proxy, OTP proxy
+- **Frontend:** React, Vite, React Router, Leaflet (maps)
+- **Trip planning / maps:** OpenTripPlanner (OTP), proxied via API; maps in Plan and Stops

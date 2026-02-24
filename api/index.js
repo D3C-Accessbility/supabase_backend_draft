@@ -20,11 +20,13 @@ app.get('/test', (req, res) => res.json({ message: 'Test OK' }));
 app.get('/', (req, res) => res.send('API running'));
 
 // routes
-const schedulesRouter = require('./routes/schedules');
-const umoRoutesRouter = require('./routes/umo_routes');
+const schedulesRouter = require("./routes/schedules");
+const umoRoutesRouter = require("./routes/umo_routes");
+const otpRouter = require("./routes/otp");
 
-app.use('/schedules', schedulesRouter);
-app.use('/umo_routes', umoRoutesRouter);
+app.use("/schedules", schedulesRouter);
+app.use("/umo_routes", umoRoutesRouter);
+app.use("/otp", otpRouter);
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);
