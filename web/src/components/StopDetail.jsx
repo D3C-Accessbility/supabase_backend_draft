@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getPredictionsByStop } from "../lib/unitransApi.js";
+import "../App.css";
 
 function formatMinutes(predictions) {
   const mins = (predictions || [])
@@ -40,36 +41,54 @@ export default function StopDetail() {
     return () => { cancelled = true; };
   }, [stopId, routeParam]);
 
-  if (loading) return <div>Loading arrivals...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="page-loading">Loading arrivals...</div>;
+  if (error) return <div className="page-error">Error: {error}</div>;
 
   const stopName = bundles[0]?.stop?.name ?? stopId ?? "Unknown stop";
 
   return (
     <div>
-      <h2>Stop: {stopName}</h2>
-      <p><Link to="/stops">← Back to stops</Link></p>
-      <p>Stop ID: {stopId}. {routeParam ? `Route: ${routeParam}` : "All routes."}</p>
-      <h3>Real-time arrivals</h3>
+      <p style={{ marginBottom: 12 }}>
+        <Link to="/stops">← Back to stops</Link>
+      </p>
+      <h2 style={{ marginBottom: 4 }}>{stopName}</h2>
+      <p className="text-muted" style={{ marginBottom: 16 }}>
+        Stop ID: {stopId} {routeParam && `• Route ${routeParam}`}
+      </p>
+      <h3 style={{ marginBottom: 12 }}>Real-time arrivals</h3>
       {bundles.length === 0 ? (
-        <p>No predictions for this stop.</p>
+        <p className="text-muted">No predictions for this stop.</p>
       ) : (
-        <ul>
+        <div>
           {bundles.map((b) => {
             const routeId = b.route?.id ?? "?";
+            const routeColor = b.route?.color || "var(--accent)";
             const dir = b.predictions?.[0]?.direction;
             const directionLabel = dir?.destinationName ?? dir?.name ?? "";
             const minutes = formatMinutes(b.predictions);
+            const nextMin = minutes.length ? Math.min(...minutes) : null;
+            const isArriving = nextMin !== null && nextMin <= 1;
             return (
-              <li key={`${routeId}-${b.stop?.id}`}>
-                <strong>Route {routeId}</strong>
-                {directionLabel && ` → ${directionLabel}`}
-                {" "}
-                {minutes.length ? `${minutes.join(", ")} min` : "No times"}
-              </li>
+              <div key={`${routeId}-${b.stop?.id}`} className="bus-card">
+                <div
+                  className="bus-card-icon"
+                  style={{ background: `${routeColor}22`, border: `2px solid ${routeColor}`, color: routeColor }}
+                >
+                  {routeId}
+                </div>
+                <div className="bus-card-body">
+                  <div className="bus-card-title">Route {routeId}</div>
+                  {directionLabel && <div className="bus-card-location">{directionLabel}</div>}
+                  <div className="bus-card-meta">
+                    <span className={`eta-badge ${isArriving ? "arriving" : "min"}`}>
+                      {isArriving ? "ARRIVING" : minutes.length ? `${minutes.join(", ")} min` : "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );
