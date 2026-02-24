@@ -3,7 +3,7 @@
  * GET /umo_routes/predictions?stop=ID&route=ROUTE (route from query if present).
  */
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { getPredictionsByStop } from "../lib/unitransApi.js";
 import "../App.css";
 
@@ -16,8 +16,8 @@ function formatMinutes(predictions) {
 
 export default function StopDetail() {
   const { stopId } = useParams();
-  const [searchParams] = useSearchParams();
-  const routeParam = searchParams.get("route") || null;
+  const location = useLocation();
+  const routeParam = new URLSearchParams(location.search).get("route") || null;
 
   const [bundles, setBundles] = useState([]);
   const [loading, setLoading] = useState(true);

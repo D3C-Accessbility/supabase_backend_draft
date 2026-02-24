@@ -9,5 +9,7 @@ Disabled Row Level Security temporarily to test out CRUD operations in API. Need
 2026-1-27
 1. For notification service, either do local machine cron, or hosted platform scheduled actions (Vercel, Render, Fly, etc.). Need to decide on which hosting platform
 
-
+2026-2-10
+-Running otp-react-redux: using react of lower version (16), need to update dependency list in main app
+-For navigation: might need to purchase a geocoder API so that users can search a custom place on map (may skip if budget is a constraint)
 

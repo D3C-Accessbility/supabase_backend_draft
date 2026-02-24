@@ -1,0 +1,219 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`components > viewers > stop viewer should render with initial stop id and no stop times 1`] = `
+<IntlProvider
+  defaultFormats={Object {}}
+  defaultLocale="en-US"
+  formats={Object {}}
+  locale="en-US"
+  messages={Object {}}
+  onError={[Function]}
+  textComponent={Symbol(react.fragment)}
+>
+  <Provider
+    store={
+      Object {
+        "clearActions": [Function],
+        "dispatch": [Function],
+        "getActions": [Function],
+        "getState": [Function],
+        "replaceReducer": [Function],
+        "subscribe": [Function],
+      }
+    }
+  >
+    <injectIntl(WrappedComponent)>
+      <WrappedComponent
+        intl={
+          Object {
+            "defaultFormats": Object {},
+            "defaultLocale": "en-US",
+            "defaultRichTextElements": undefined,
+            "formatDate": [Function],
+            "formatDateTimeRange": [Function],
+            "formatDateToParts": [Function],
+            "formatDisplayName": [Function],
+            "formatList": [Function],
+            "formatListToParts": [Function],
+            "formatMessage": [Function],
+            "formatNumber": [Function],
+            "formatNumberToParts": [Function],
+            "formatPlural": [Function],
+            "formatRelativeTime": [Function],
+            "formatTime": [Function],
+            "formatTimeToParts": [Function],
+            "formats": Object {},
+            "formatters": Object {
+              "getDateTimeFormat": [Function],
+              "getDisplayNames": [Function],
+              "getListFormat": [Function],
+              "getMessageFormat": [Function],
+              "getNumberFormat": [Function],
+              "getPluralRules": [Function],
+              "getRelativeTimeFormat": [Function],
+            },
+            "locale": "en-US",
+            "messages": Object {},
+            "onError": [Function],
+            "textComponent": Symbol(react.fragment),
+            "timeZone": undefined,
+            "wrapRichTextChunksInFragment": undefined,
+          }
+        }
+      >
+        <Connect(StopScheduleViewer)
+          intl={
+            Object {
+              "defaultFormats": Object {},
+              "defaultLocale": "en-US",
+              "defaultRichTextElements": undefined,
+              "formatDate": [Function],
+              "formatDateTimeRange": [Function],
+              "formatDateToParts": [Function],
+              "formatDisplayName": [Function],
+              "formatList": [Function],
+              "formatListToParts": [Function],
+              "formatMessage": [Function],
+              "formatNumber": [Function],
+              "formatNumberToParts": [Function],
+              "formatPlural": [Function],
+              "formatRelativeTime": [Function],
+              "formatTime": [Function],
+              "formatTimeToParts": [Function],
+              "formats": Object {},
+              "formatters": Object {
+                "getDateTimeFormat": [Function],
+                "getDisplayNames": [Function],
+                "getListFormat": [Function],
+                "getMessageFormat": [Function],
+                "getNumberFormat": [Function],
+                "getPluralRules": [Function],
+                "getRelativeTimeFormat": [Function],
+              },
+              "locale": "en-US",
+              "messages": Object {},
+              "onError": [Function],
+              "textComponent": Symbol(react.fragment),
+              "timeZone": undefined,
+              "wrapRichTextChunksInFragment": undefined,
+            }
+          }
+        >
+          <StopScheduleViewer
+            calendarMax="2027-12-31"
+            calendarMin="2026-01-01"
+            findStopTimesForStop={[Function]}
+            homeTimezone="America/Los_Angeles"
+            intl={
+              Object {
+                "defaultFormats": Object {},
+                "defaultLocale": "en-US",
+                "defaultRichTextElements": undefined,
+                "formatDate": [Function],
+                "formatDateTimeRange": [Function],
+                "formatDateToParts": [Function],
+                "formatDisplayName": [Function],
+                "formatList": [Function],
+                "formatListToParts": [Function],
+                "formatMessage": [Function],
+                "formatNumber": [Function],
+                "formatNumberToParts": [Function],
+                "formatPlural": [Function],
+                "formatRelativeTime": [Function],
+                "formatTime": [Function],
+                "formatTimeToParts": [Function],
+                "formats": Object {},
+                "formatters": Object {
+                  "getDateTimeFormat": [Function],
+                  "getDisplayNames": [Function],
+                  "getListFormat": [Function],
+                  "getMessageFormat": [Function],
+                  "getNumberFormat": [Function],
+                  "getPluralRules": [Function],
+                  "getRelativeTimeFormat": [Function],
+                },
+                "locale": "en-US",
+                "messages": Object {},
+                "onError": [Function],
+                "textComponent": Symbol(react.fragment),
+                "timeZone": undefined,
+                "wrapRichTextChunksInFragment": undefined,
+              }
+            }
+            showBlockIds={false}
+            stopId="TriMet:13170"
+            transitOperators={Array []}
+            zoomToPlace={[Function]}
+          >
+            <div
+              className="stop-viewer base-color-bg"
+            >
+              <Connect(PageTitle)
+                title={
+                  Array [
+                    "components.StopViewer.titleBarStopId",
+                    "components.StopViewer.schedule",
+                  ]
+                }
+              >
+                <PageTitle
+                  appTitle=""
+                  dispatch={[Function]}
+                  title={
+                    Array [
+                      "components.StopViewer.titleBarStopId",
+                      "components.StopViewer.schedule",
+                    ]
+                  }
+                />
+              </Connect(PageTitle)>
+              <Connect(ServiceTimeRangeRetriever)>
+                <ServiceTimeRangeRetriever
+                  retrieveServiceTimeRangeIfNeeded={[Function]}
+                />
+              </Connect(ServiceTimeRangeRetriever)>
+              <div
+                className="stop-viewer-header"
+              >
+                <styled.div>
+                  <div
+                    className="sc-dFJtaz jCzkSF"
+                  >
+                    <styled.div>
+                      <div
+                        className="sc-higWrZ iufNuL"
+                      >
+                        <h1>
+                          <FormattedMessage
+                            id="components.StopViewer.loadingText"
+                          >
+                            components.StopViewer.loadingText
+                          </FormattedMessage>
+                        </h1>
+                      </div>
+                    </styled.div>
+                  </div>
+                </styled.div>
+                <Connect(FavoriteStopToggle)>
+                  <FavoriteStopToggle
+                    forgetStop={[Function]}
+                    isFavoriteStop={false}
+                    rememberStop={[Function]}
+                  />
+                </Connect(FavoriteStopToggle)>
+                <div
+                  style={
+                    Object {
+                      "clear": "both",
+                    }
+                  }
+                />
+              </div>
+            </div>
+          </StopScheduleViewer>
+        </Connect(StopScheduleViewer)>
+      </WrappedComponent>
+    </injectIntl(WrappedComponent)>
+  </Provider>
+</IntlProvider>
+`;
