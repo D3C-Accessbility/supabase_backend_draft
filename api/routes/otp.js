@@ -71,6 +71,31 @@ const HEALTH_QUERY = `
   }
 `;
 
+function normalizePlan(plan) {
+  if (!plan || !Array.isArray(plan.itineraries)) {
+    return plan || null;
+  }
+
+  return {
+    ...plan,
+    itineraries: plan.itineraries.map((itinerary) => {
+      const legs = Array.isArray(itinerary?.legs) ? itinerary.legs : [];
+      const derivedStart = itinerary?.startTime ?? legs[0]?.startTime ?? legs[0]?.from?.departureTime ?? null;
+      const derivedEnd =
+        itinerary?.endTime ??
+        legs[legs.length - 1]?.endTime ??
+        legs[legs.length - 1]?.to?.arrivalTime ??
+        null;
+      return {
+        ...itinerary,
+        startTime: derivedStart,
+        endTime: derivedEnd,
+        legs,
+      };
+    }),
+  };
+}
+
 async function postOtpGraphql(query, variables = {}) {
   const response = await fetch(OTP_GRAPHQL_URL, {
     method: "POST",
@@ -140,7 +165,8 @@ router.get("/plan", async (req, res) => {
       arriveBy: arriveBy === "true",
     };
     const payload = await postOtpGraphql(PLAN_QUERY, variables);
-    res.json({ plan: payload?.data?.plan || null });
+    const plan = normalizePlan(payload?.data?.plan || null);
+    res.json({ plan });
   } catch (err) {
     console.error("OTP plan error:", err);
     res.status(err.status || 502).json({ error: err.message || "Could not reach OpenTripPlanner." });

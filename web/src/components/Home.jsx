@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
-import { getRoutes, getStopsByRoute, getPredictionsNear, planTrip } from "../lib/unitransApi.js";
+import { getRoutes, getStopsByRoute, getPredictionsNear, getRouteStopPredictions, planTrip } from "../lib/unitransApi.js";
 import { decodePolyline } from "../lib/polyline.js";
 import "../App.css";
 import "leaflet/dist/leaflet.css";
@@ -48,6 +48,10 @@ export default function Home() {
   const [bundles, setBundles] = useState([]);
   const [loadingBuses, setLoadingBuses] = useState(false);
   const [busesError, setBusesError] = useState("");
+  const [selectedEstimateTime, setSelectedEstimateTime] = useState("");
+  const [selectedDelayMinutes, setSelectedDelayMinutes] = useState(null);
+  const [selectedDelayLoading, setSelectedDelayLoading] = useState(false);
+  const [selectedDelayError, setSelectedDelayError] = useState("");
 
   // Load routes once
   useEffect(() => {
@@ -188,6 +192,84 @@ export default function Home() {
   const itineraries = plan?.plan?.itineraries || [];
   const selected = itineraries[selectedItineraryIndex];
   const durationMin = selected?.duration ? Math.round(selected.duration / 60) : null;
+  const selectedStart = (() => {
+    if (selected?.startTime == null) return "";
+    const numericValue = Number(selected.startTime);
+    const date = Number.isFinite(numericValue) ? new Date(numericValue) : new Date(selected.startTime);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  })();
+  const selectedEnd = (() => {
+    if (selected?.endTime == null) return "";
+    const numericValue = Number(selected.endTime);
+    const date = Number.isFinite(numericValue) ? new Date(numericValue) : new Date(selected.endTime);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  })();
+  const firstTransitLeg = (selected?.legs || []).find((leg) => leg?.mode && leg.mode !== "WALK");
+
+  useEffect(() => {
+    let cancelled = false;
+    const routeId = firstTransitLeg?.route?.shortName || boardingRoute || "";
+    const stopId = boardingStop || "";
+    const scheduledStart = firstTransitLeg?.startTime ?? selected?.startTime ?? null;
+
+    if (!selected || !routeId || !stopId || scheduledStart == null) {
+      setSelectedEstimateTime("");
+      setSelectedDelayMinutes(null);
+      setSelectedDelayLoading(false);
+      setSelectedDelayError("");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setSelectedDelayLoading(true);
+    setSelectedDelayError("");
+    getRouteStopPredictions(routeId, stopId)
+      .then((data) => {
+        if (cancelled) return;
+        const predictions = Array.isArray(data)
+          ? data.flatMap((bundle) => (Array.isArray(bundle?.predictions) ? bundle.predictions : []))
+          : [];
+        const minutes = predictions
+          .map((prediction) => Number(prediction?.minutes))
+          .filter((value) => Number.isFinite(value) && value >= 0);
+
+        if (!minutes.length) {
+          setSelectedEstimateTime("");
+          setSelectedDelayMinutes(null);
+          setSelectedDelayError("No live estimate for this itinerary.");
+          return;
+        }
+
+        const nextMinutes = Math.min(...minutes);
+        const estimatedDate = new Date(Date.now() + nextMinutes * 60 * 1000);
+        const startNumeric = Number(scheduledStart);
+        const scheduledDate = Number.isFinite(startNumeric) ? new Date(startNumeric) : new Date(scheduledStart);
+        const hasScheduledDate = !Number.isNaN(scheduledDate.getTime());
+
+        setSelectedEstimateTime(
+          estimatedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
+        );
+        setSelectedDelayMinutes(
+          hasScheduledDate ? Math.round((estimatedDate.getTime() - scheduledDate.getTime()) / (60 * 1000)) : null
+        );
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setSelectedEstimateTime("");
+        setSelectedDelayMinutes(null);
+        setSelectedDelayError(err.message || "Failed to fetch live delay.");
+      })
+      .finally(() => {
+        if (!cancelled) setSelectedDelayLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, firstTransitLeg, boardingRoute, boardingStop]);
 
   const mapPoints = [];
   if (fromCoords) mapPoints.push(fromCoords);
@@ -362,6 +444,30 @@ export default function Home() {
             <div className="bus-card" style={{ marginBottom: 12 }}>
               <div className="bus-card-body">
                 <div className="bus-card-title">Trip · {durationMin} min</div>
+                {(selectedStart || selectedEnd) && (
+                  <div className="bus-card-meta" style={{ marginTop: 4 }}>
+                    {selectedStart || "?"} - {selectedEnd || "?"}
+                  </div>
+                )}
+                <div className="bus-card-meta" style={{ marginTop: 4 }}>
+                  Estimated arrival: {selectedDelayLoading ? "Loading..." : selectedEstimateTime || "N/A"}
+                </div>
+                <div className="bus-card-meta" style={{ marginTop: 4 }}>
+                  Delay: {selectedDelayLoading
+                    ? "Loading..."
+                    : selectedDelayMinutes == null
+                      ? "N/A"
+                      : selectedDelayMinutes === 0
+                        ? "On time"
+                        : selectedDelayMinutes > 0
+                          ? `${selectedDelayMinutes} min late`
+                          : `${Math.abs(selectedDelayMinutes)} min early`}
+                </div>
+                {!selectedDelayLoading && selectedDelayError && (
+                  <div className="bus-card-meta" style={{ marginTop: 4 }}>
+                    {selectedDelayError}
+                  </div>
+                )}
                 {(selected.legs || []).map((leg, i) => (
                   <div key={i} className="bus-card-meta" style={{ marginTop: 4 }}>
                     {leg.mode === "WALK" ? "Walk" : leg.route?.shortName || leg.mode}
