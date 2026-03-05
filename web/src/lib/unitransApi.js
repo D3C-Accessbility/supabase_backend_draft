@@ -35,6 +35,16 @@ export async function getPredictionsByStop(stopId, routeId = null) {
 }
 
 /**
+ * GET /umo_routes/agencies/:agency/routes/:route/stops/:stop/predictions
+ * → real-time predictions for a stop within a route for an agency
+ */
+export async function getRouteStopPredictions(routeId, stopId, agency = "unitrans") {
+  return api(
+    `umo_routes/agencies/${encodeURIComponent(agency)}/routes/${encodeURIComponent(routeId)}/stops/${encodeURIComponent(stopId)}/predictions`
+  );
+}
+
+/**
  * GET /umo_routes/predictions/near?lat=LAT&lon=LON
  * → array of prediction bundles
  */

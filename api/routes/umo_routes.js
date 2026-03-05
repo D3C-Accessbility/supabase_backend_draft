@@ -155,14 +155,35 @@ router.get('/predictions', async (req, res) => {
   }
 
   try {
-    const path = route
-      ? `/agencies/${AGENCY}/routes/${encodeURIComponent(route)}/stops/${encodeURIComponent(stop)}/predictions`
-      : `/agencies/${AGENCY}/stops/${encodeURIComponent(stop)}/predictions`;
-    const data = await umoiqFetch(path);
+    const data = route
+      ? await umoiqFetch(
+        `/agencies/${encodeURIComponent(AGENCY)}/routes/${encodeURIComponent(route)}/stops/${encodeURIComponent(stop)}/predictions`
+      )
+      : await umoiqFetch(`/agencies/${AGENCY}/stops/${encodeURIComponent(stop)}/predictions`);
     res.json(normalizePredictionBundles(data));
   } catch (error) {
     console.error("UmoIQ predictions error:", error);
     res.status(500).json({ error: "Failed to fetch predictions" });
+  }
+});
+
+// GET /umo_routes/agencies/:agency/routes/:route/stops/:stop/predictions
+// - get real-time predictions for a stop within a route for an agency
+router.get('/agencies/:agency/routes/:route/stops/:stop/predictions', async (req, res) => {
+  const { agency, route, stop } = req.params;
+
+  if (!agency || !route || !stop) {
+    return res.status(400).json({ error: "Missing agency, route, or stop parameter" });
+  }
+
+  try {
+    const data = await umoiqFetch(
+      `/agencies/${encodeURIComponent(agency)}/routes/${encodeURIComponent(route)}/stops/${encodeURIComponent(stop)}/predictions`
+    );
+    res.json(normalizePredictionBundles(data));
+  } catch (error) {
+    console.error("UmoIQ route-stop predictions error:", error);
+    res.status(500).json({ error: "Failed to fetch route stop predictions" });
   }
 });
 

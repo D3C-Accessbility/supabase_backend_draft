@@ -1,13 +1,26 @@
 /**
- * Home: route planning card, status pills, Buses Running Now.
- * Boarding From / Going To use routes + stops; Find Buses shows arrivals for selected stop.
+ * Home: route planning card, in-page trip planning results, status pills, Buses Running Now.
  */
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getRoutes, getStopsByRoute, getPredictionsNear } from "../lib/unitransApi.js";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import L from "leaflet";
+import { getRoutes, getStopsByRoute, getPredictionsNear, planTrip } from "../lib/unitransApi.js";
+import { decodePolyline } from "../lib/polyline.js";
 import "../App.css";
+import "leaflet/dist/leaflet.css";
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAVIS_CENTER = [38.5449, -121.7405];
+
+function FitBounds({ points }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!points || points.length < 2) return;
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, { padding: [24, 24] });
+  }, [map, points]);
+  return null;
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -26,8 +39,13 @@ export default function Home() {
   const [goingStops, setGoingStops] = useState([]);
   const [goingStop, setGoingStop] = useState("");
   const [dateChoice, setDateChoice] = useState("TODAY");
+  const [tripDate, setTripDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [tripTime, setTripTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [plan, setPlan] = useState(null);
+  const [planning, setPlanning] = useState(false);
+  const [planError, setPlanError] = useState("");
+  const [selectedItineraryIndex, setSelectedItineraryIndex] = useState(0);
   const [bundles, setBundles] = useState([]);
-  const [coords, setCoords] = useState(null);
   const [loadingBuses, setLoadingBuses] = useState(false);
   const [busesError, setBusesError] = useState("");
 
@@ -66,7 +84,6 @@ export default function Home() {
       (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
-        setCoords({ lat, lon });
         getPredictionsNear(lat, lon)
           .then((data) => setBundles(Array.isArray(data) ? data : []))
           .catch((err) => setBusesError(err.message || "Failed to load buses."))
@@ -84,6 +101,46 @@ export default function Home() {
     loadNearbyBuses();
   }, []);
 
+  const fromStopObj = boardingStops.find((s) => String(s.id) === String(boardingStop));
+  const toStopObj = goingStops.find((s) => String(s.id) === String(goingStop));
+  const fromLat = fromStopObj?.lat != null ? Number(fromStopObj.lat) : null;
+  const fromLon = fromStopObj?.lon != null ? Number(fromStopObj.lon) : null;
+  const toLat = toStopObj?.lat != null ? Number(toStopObj.lat) : null;
+  const toLon = toStopObj?.lon != null ? Number(toStopObj.lon) : null;
+  const fromCoords = fromLat != null && fromLon != null ? [fromLat, fromLon] : null;
+  const toCoords = toLat != null && toLon != null ? [toLat, toLon] : null;
+
+  const runPlan = useCallback(() => {
+    if (fromLat == null || fromLon == null || toLat == null || toLon == null) {
+      setPlanError("Select both origin and destination stops.");
+      setPlan(null);
+      return;
+    }
+    setPlanning(true);
+    setPlanError("");
+    setPlan(null);
+    planTrip({
+      fromLat,
+      fromLon,
+      toLat,
+      toLon,
+      date: tripDate,
+      time: tripTime,
+      arriveBy: false,
+    })
+      .then((data) => {
+        const itineraries = data?.plan?.itineraries;
+        if (!itineraries || itineraries.length === 0) {
+          setPlanError("No itineraries found. Try different stops or time.");
+          return;
+        }
+        setPlan(data);
+        setSelectedItineraryIndex(0);
+      })
+      .catch((err) => setPlanError(err.message || "Trip plan failed."))
+      .finally(() => setPlanning(false));
+  }, [fromLat, fromLon, toLat, toLon, tripDate, tripTime]);
+
   const swapStops = () => {
     setBoardingRoute(goingRoute);
     setBoardingStops(goingStops);
@@ -91,29 +148,57 @@ export default function Home() {
     setGoingRoute(boardingRoute);
     setGoingStops(boardingStops);
     setGoingStop(boardingStop);
+    setPlan(null);
+    setPlanError("");
   };
 
   const handleFindBuses = () => {
-    const fromStopObj = boardingStops.find((s) => String(s.id) === String(boardingStop));
-    const toStopObj = goingStops.find((s) => String(s.id) === String(goingStop));
-    if (fromStopObj && toStopObj && fromStopObj.lat != null && toStopObj.lat != null) {
-      navigate("/plan", {
-        state: {
-          from: { lat: fromStopObj.lat, lon: fromStopObj.lon, name: fromStopObj.name, routeId: boardingRoute },
-          to: { lat: toStopObj.lat, lon: toStopObj.lon, name: toStopObj.name, routeId: goingRoute },
-        },
-      });
+    const hasFromSelection = Boolean(boardingStop && boardingRoute);
+    const hasToSelection = Boolean(goingStop && goingRoute && toLat != null && toLon != null);
+
+    if (hasFromSelection && hasToSelection && fromLat != null && fromLon != null) {
+      runPlan();
       return;
     }
-    if (boardingStop && boardingRoute) {
+
+    if (hasFromSelection) {
       navigate(`/stops/${encodeURIComponent(boardingStop)}?route=${encodeURIComponent(boardingRoute)}`);
     } else {
-      navigate("/plan");
+      setPlanError("Select at least a boarding stop to continue.");
+      setPlan(null);
+    }
+  };
+
+  const applyDateChoice = (choice) => {
+    setDateChoice(choice);
+    const now = new Date();
+    if (choice === "TODAY") {
+      setTripDate(now.toISOString().slice(0, 10));
+      return;
+    }
+    if (choice === "TOMORROW") {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setTripDate(tomorrow.toISOString().slice(0, 10));
     }
   };
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const itineraries = plan?.plan?.itineraries || [];
+  const selected = itineraries[selectedItineraryIndex];
+  const durationMin = selected?.duration ? Math.round(selected.duration / 60) : null;
+
+  const mapPoints = [];
+  if (fromCoords) mapPoints.push(fromCoords);
+  if (toCoords) mapPoints.push(toCoords);
+  if (selected?.legs) {
+    selected.legs.forEach((leg) => {
+      const pts = leg.legGeometry?.points ? decodePolyline(leg.legGeometry.points) : [];
+      pts.forEach((p) => mapPoints.push(p));
+    });
+  }
+  if (toCoords) mapPoints.push(toCoords);
 
   // Build "Buses Running Now" list from bundles (one card per route+stop with next ETA)
   const busCards = bundles.slice(0, 8).map((b) => {
@@ -151,7 +236,11 @@ export default function Home() {
         <label>BOARDING FROM</label>
         <select
           value={boardingRoute}
-          onChange={(e) => setBoardingRoute(e.target.value)}
+          onChange={(e) => {
+            setBoardingRoute(e.target.value);
+            setPlan(null);
+            setPlanError("");
+          }}
           aria-label="Route for boarding"
         >
           <option value="">Select route</option>
@@ -161,7 +250,11 @@ export default function Home() {
         </select>
         <select
           value={boardingStop}
-          onChange={(e) => setBoardingStop(e.target.value)}
+          onChange={(e) => {
+            setBoardingStop(e.target.value);
+            setPlan(null);
+            setPlanError("");
+          }}
           aria-label="Stop for boarding"
         >
           <option value="">Where are you starting?</option>
@@ -179,7 +272,11 @@ export default function Home() {
         <label>GOING TO</label>
         <select
           value={goingRoute}
-          onChange={(e) => setGoingRoute(e.target.value)}
+          onChange={(e) => {
+            setGoingRoute(e.target.value);
+            setPlan(null);
+            setPlanError("");
+          }}
           aria-label="Route for destination"
         >
           <option value="">Select route</option>
@@ -189,7 +286,11 @@ export default function Home() {
         </select>
         <select
           value={goingStop}
-          onChange={(e) => setGoingStop(e.target.value)}
+          onChange={(e) => {
+            setGoingStop(e.target.value);
+            setPlan(null);
+            setPlanError("");
+          }}
           aria-label="Destination stop"
         >
           <option value="">Where&apos;s your destination?</option>
@@ -204,17 +305,124 @@ export default function Home() {
               key={d}
               type="button"
               className={`date-btn ${dateChoice === d ? "active" : ""}`}
-              onClick={() => setDateChoice(d)}
+              onClick={() => applyDateChoice(d)}
             >
               {d}
             </button>
           ))}
         </div>
 
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            type="date"
+            value={tripDate}
+            onChange={(e) => {
+              setDateChoice("OTHER");
+              setTripDate(e.target.value);
+            }}
+            aria-label="Trip date"
+          />
+          <input
+            type="time"
+            value={tripTime}
+            onChange={(e) => setTripTime(e.target.value)}
+            aria-label="Trip time"
+          />
+        </div>
+
         <button type="button" className="btn-find-buses" onClick={handleFindBuses}>
-          <span>🚌</span> FIND BUSES
+          <span>🚌</span> {planning ? "PLANNING..." : "FIND BUSES"}
         </button>
       </div>
+
+      <div className="section-title">
+        <span>Planned Trip</span>
+      </div>
+
+      {planning && <div className="page-loading">Planning trip...</div>}
+      {planError && <div className="page-error">{planError}</div>}
+
+      {plan && itineraries.length > 0 && (
+        <>
+          <div style={{ marginBottom: 12 }}>
+            {itineraries.map((itin, i) => (
+              <button
+                key={i}
+                type="button"
+                className="eta-badge min"
+                style={{ marginRight: 8, marginBottom: 8 }}
+                onClick={() => setSelectedItineraryIndex(i)}
+              >
+                {i === selectedItineraryIndex ? "● " : ""}
+                {Math.round(itin.duration / 60)} min
+              </button>
+            ))}
+          </div>
+          {selected && (
+            <div className="bus-card" style={{ marginBottom: 12 }}>
+              <div className="bus-card-body">
+                <div className="bus-card-title">Trip · {durationMin} min</div>
+                {(selected.legs || []).map((leg, i) => (
+                  <div key={i} className="bus-card-meta" style={{ marginTop: 4 }}>
+                    {leg.mode === "WALK" ? "Walk" : leg.route?.shortName || leg.mode}
+                    {leg.from?.name ? ` → ${leg.from.name}` : ""}
+                    {leg.to?.name ? ` to ${leg.to.name}` : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ height: 280, borderRadius: 12, overflow: "hidden", border: "1px solid var(--border)", marginBottom: 16 }}>
+            <MapContainer
+              center={DAVIS_CENTER}
+              zoom={14}
+              style={{ height: "100%", width: "100%" }}
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {fromCoords && (
+                <Marker
+                  position={fromCoords}
+                  icon={L.divIcon({
+                    html: '<span style="background:#3b82f6;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;">A</span>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                  })}
+                >
+                  <Popup>From</Popup>
+                </Marker>
+              )}
+              {toCoords && (
+                <Marker
+                  position={toCoords}
+                  icon={L.divIcon({
+                    html: '<span style="background:#22c55e;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;">B</span>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                  })}
+                >
+                  <Popup>To</Popup>
+                </Marker>
+              )}
+              {selected?.legs?.map((leg, i) => {
+                const pts = leg.legGeometry?.points ? decodePolyline(leg.legGeometry.points) : [];
+                if (pts.length < 2) return null;
+                return <Polyline key={i} positions={pts} color={leg.route?.color || "#3b82f6"} weight={4} />;
+              })}
+              <FitBounds points={mapPoints.length >= 2 ? mapPoints : null} />
+            </MapContainer>
+          </div>
+        </>
+      )}
+
+      {!plan && !planning && !planError && (
+        <div className="map-placeholder" style={{ marginBottom: 16 }}>
+          Select from/to stops and click &quot;Find Buses&quot; to show trip options here.
+        </div>
+      )}
 
       <div className="status-pills">
         <span className="pill pill-green">LIVE • {timeStr}</span>

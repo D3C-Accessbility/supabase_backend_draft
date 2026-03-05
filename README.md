@@ -37,7 +37,7 @@ Full-stack app for Unitrans bus services: real-time arrivals, trip planning with
    ```bash
    cd web
    npm install
-   # Optional: .env with VITE_SUPABASE_*, VITE_API_URL (default http://localhost:3000)
+   # Optional: add web/.env.local (see Environment section below)
    npm run dev
    ```
    Web runs at `http://localhost:5173`.
@@ -73,10 +73,18 @@ Full-stack app for Unitrans bus services: real-time arrivals, trip planning with
 - `OTP_URL` – optional, default `http://localhost:8080`. Use `http://localhost:9080` if you start OTP with the script (it uses port 9080 to avoid Docker).
 - `OTP_ROUTER_ID` – optional, default `default`
 
-**web/.env**
+**web/.env.local**
 
-- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_KEY` – Supabase (auth)
-- `VITE_API_URL` – optional, default `http://localhost:3000`
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+VITE_SUPABASE_ANON=your_supabase_anon_jwt
+VITE_API_BASE_URL=/api
+VITE_OTP_APP_URL=/otp/
+VITE_APP_URL=http://localhost:3000
+```
+
+Do not commit real keys/tokens to source control.
 
 ## Tech stack
 
