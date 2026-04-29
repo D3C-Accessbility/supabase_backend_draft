@@ -2,3 +2,5 @@ node_modules/
 .expo/
 dist/
 .env.env
+.env
+open_trip_planner/*.jar
